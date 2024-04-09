@@ -1,7 +1,7 @@
 <?PHP
 ###############################################################
 #                                                             #
-# Community Applications copyright 2015-2024, Andrew Zawadzki #
+# Community Applications copyright 2015-2023, Andrew Zawadzki #
 #                   Licenced under GPLv2                      #
 #                                                             #
 ###############################################################
@@ -213,26 +213,22 @@ switch ($_POST['action']) {
 function DownloadApplicationFeed() {
   global $caPaths, $caSettings, $statistics;
 
-  //$info = readJsonFile($caPaths['info']);
+  $info = readJsonFile($caPaths['info']);
   exec("rm -rf '{$caPaths['tempFiles']}'");
   @mkdir($caPaths['templates-community'],0777,true);
 
   $currentFeed = "Primary Server";
-  if ( $caPaths['localONLY'] ) {
-    $ApplicationFeed = json_decode(file_get_contents($caPaths['application-feed-local']),true);
-  } else {
-    $downloadURL = randomFile();
-    $ApplicationFeed = download_json($caPaths['application-feed'],$downloadURL,"",20);
-    if ( (! is_array($ApplicationFeed['applist'])) || empty($ApplicationFeed['applist']) ) {
-      $currentFeed = "Backup Server";
-      $ApplicationFeed = download_json($caPaths['application-feedBackup'],$downloadURL);
-    }
-    @unlink($downloadURL);
-    if ( (! is_array($ApplicationFeed['applist'])) || empty($ApplicationFeed['applist']) ) {
-      @unlink($caPaths['currentServer']);
-      ca_file_put_contents($caPaths['appFeedDownloadError'],$downloadURL);
-      return false;
-    }
+  $downloadURL = randomFile();
+  $ApplicationFeed = download_json($caPaths['application-feed'],$downloadURL,"",20);
+  if ( (! is_array($ApplicationFeed['applist'])) || empty($ApplicationFeed['applist']) ) {
+    $currentFeed = "Backup Server";
+    $ApplicationFeed = download_json($caPaths['application-feedBackup'],$downloadURL);
+  }
+  @unlink($downloadURL);
+  if ( (! is_array($ApplicationFeed['applist'])) || empty($ApplicationFeed['applist']) ) {
+    @unlink($caPaths['currentServer']);
+    ca_file_put_contents($caPaths['appFeedDownloadError'],$downloadURL);
+    return false;
   }
   ca_file_put_contents($caPaths['currentServer'],$currentFeed);
   $i = 0;
@@ -245,12 +241,9 @@ function DownloadApplicationFeed() {
       $invalidXML[] = $o;
       continue;
     }
-    if ( $o['hideFromCA'] ?? false )
-      continue;
+    $o = addMissingVars($o);
 
-    $o['CategoryList'] = $o['CategoryList'] ?? [];
     if ( $o['CategoryList'] ) {
-      $o['Category'] = $o['Category'] ?? "";
       foreach ($o['CategoryList'] as $cat) {
         $cat = str_replace("-",":",$cat);
         if ( ! strpos($cat,":") )
@@ -258,19 +251,18 @@ function DownloadApplicationFeed() {
         $o['Category'] .= "$cat ";
       }
     }
-
-    $o['Category'] = $o['Category'] ?? "";
+    if ( $o['Category'] === null )
+      $o['Category'] = "";
     $o['Category'] = trim($o['Category']);
     if ( ! $o['Category'] )
       $o['Category'] = "Other:";
 
-
-    if ( $o['RecommendedRaw'] ?? null) {
+    if ( $o['RecommendedRaw'] ) {
       $o['RecommendedDate'] = strtotime($o['RecommendedRaw']);
       $o['Category'] .= " spotlight:";
     }
 
-    if ( $o['Language'] ?? null) {
+    if ( $o['Language'] ) {
       $o['Category'] = "Language:";
       $o['Compatible'] = true;
       $o['Repository'] = "library/";
@@ -287,7 +279,7 @@ function DownloadApplicationFeed() {
     $o['SortName']      = preg_replace('/\s+/',' ',$o['SortName']);
     $o['random']        = rand();
 
-    if ( $o['CAComment'] ?? null) {
+    if ( $o['CAComment'] ) {
         $tmpComment = explode("&zwj;",$o['CAComment']);  // non printable delimiter character
         $o['CAComment'] = "";
         foreach ($tmpComment as $comment) {
@@ -295,26 +287,25 @@ function DownloadApplicationFeed() {
             $o['CAComment'] .= tr($comment)."  ";
         }
     }
-    if ( $o['RequiresFile'] ?? null) $o['RequiresFile'] = trim($o['RequiresFile']);
-    if ( $o['Requires'] ?? null) 		$o['Requires'] = trim($o['Requires']);
+    if ( $o['RequiresFile'] ) $o['RequiresFile'] = trim($o['RequiresFile']);
+    if ( $o['Requires'] ) 		$o['Requires'] = trim($o['Requires']);
 
-    $des = $o['OriginalOverview'] ?? ($o['Overview']??null);
-    $des = ($o['Language']??null) ? ($o['Description']??null) : $des;
-    if ( ! $des && ($o['Description']??null) )
-      $des = $o['Description'];
-    if ( ! ($o['Language']??null) ) {
+    $des = $o['OriginalOverview'] ?? $o['Overview'];
+    $des = $o['Language'] ? $o['Description'] : $des;
+    if ( ! $des && $o['Description'] ) $des = $o['Description'];
+    if ( ! $o['Language'] ) {
       $des = str_replace(["[","]"],["<",">"],$des);
       $des = str_replace("\n","  ",$des);
       $des = html_entity_decode($des);
     }
 
-    if ( $o['PluginURL'] ?? null ) {
+    if ( $o['PluginURL'] ) {
       $o['Author']        = $o['PluginAuthor'];
       $o['Repository']    = $o['PluginURL'];
     }
 
-    $o['Blacklist'] = ($o['CABlacklist']??null) ? true : ($o['Blacklist']??false);
-    $o['MinVer'] = max([($o['MinVer']??null),($o['UpdateMinVer']??null)]);
+    $o['Blacklist'] = $o['CABlacklist'] ? true : $o['Blacklist'];
+    $o['MinVer'] = max([$o['MinVer'],$o['UpdateMinVer']]);
     $tag = explode(":",$o['Repository']);
     if (! isset($tag[1]))
       $tag[1] = "latest";
@@ -327,7 +318,7 @@ function DownloadApplicationFeed() {
     $o = fixTemplates($o);
     if ( ! $o ) continue;
 
-    if ( is_array($o['trends']??null) && count($o['trends']) > 1 ) {
+    if ( is_array($o['trends']) && count($o['trends']) > 1 ) {
       $o['trendDelta'] = round(end($o['trends']) - $o['trends'][0],4);
       $o['trendAverage'] = round(array_sum($o['trends'])/count($o['trends']),4);
     }
@@ -336,21 +327,17 @@ function DownloadApplicationFeed() {
     $o['Category'] = str_replace("Status:Stable","",$o['Category']);
     $myTemplates[$i] = $o;
 
-    if ( ! ($o['Official']??null) ) {
-      if ( ! ($o['DonateText']??null) && ($ApplicationFeed['repositories'][$o['RepoName']]['DonateText'] ?? false) )
-        $o['DonateText'] = $ApplicationFeed['repositories'][$o['RepoName']]['DonateText'];
-      if ( ! ($o['DonateLink']??null) && ($ApplicationFeed['repositories'][$o['RepoName']]['DonateLink'] ?? false) )
-        $o['DonateLink'] = $ApplicationFeed['repositories'][$o['RepoName']]['DonateLink'];
-    } else {
-      $o['DonateText'] = $o['OfficialDonateText'] ?? null;
-      $o['DonateLink'] = $o['OfficialDonateLink'] ?? null;
-    }
+    if ( ! $o['DonateText'] && ($ApplicationFeed['repositories'][$o['RepoName']]['DonateText'] ?? false) )
+      $o['DonateText'] = $ApplicationFeed['repositories'][$o['RepoName']]['DonateText'];
+    if ( ! $o['DonateLink'] && ($ApplicationFeed['repositories'][$o['RepoName']]['DonateLink'] ?? false) )
+      $o['DonateLink'] = $ApplicationFeed['repositories'][$o['RepoName']]['DonateLink'];
+
     $ApplicationFeed['repositories'][$o['RepoName']]['downloads'] = $ApplicationFeed['repositories'][$o['RepoName']]['downloads'] ?? 0;
     $ApplicationFeed['repositories'][$o['RepoName']]['trending'] = $ApplicationFeed['repositories'][$o['RepoName']]['trending'] ?? 0;
 
     $ApplicationFeed['repositories'][$o['RepoName']]['downloads']++;
-    $ApplicationFeed['repositories'][$o['RepoName']]['trending'] += $o['trending']??null;
-    if ( ! ($o['ModeratorComment']??null) == "Duplicated Template" ) {
+    $ApplicationFeed['repositories'][$o['RepoName']]['trending'] += $o['trending'];
+    if ( ! $o['ModeratorComment'] == "Duplicated Template" ) {
       if ( $ApplicationFeed['repositories'][$o['RepoName']]['FirstSeen'] ?? false) {
         if ( $o['FirstSeen'] < $ApplicationFeed['repositories'][$o['RepoName']]['FirstSeen'])
           $ApplicationFeed['repositories'][$o['RepoName']]['FirstSeen'] = $o['FirstSeen'];
@@ -358,7 +345,7 @@ function DownloadApplicationFeed() {
         $ApplicationFeed['repositories'][$o['RepoName']]['FirstSeen'] = $o['FirstSeen'];
       }
     }
-    if ( is_array($o['Branch']??null) ) {
+    if ( is_array($o['Branch']) ) {
       if ( ! isset($o['Branch'][0]) ) {
         $tmp = $o['Branch'];
         unset($o['Branch']);
@@ -375,8 +362,8 @@ function DownloadApplicationFeed() {
         $subBranch['Path'] = $caPaths['templates-community']."/".$i.".xml";
         $subBranch['Displayable'] = false;
         $subBranch['ID'] = $i;
-        $subBranch['Overview'] = $o['OriginalOverview'] ?? $o['Overview'];
-        $subBranch['Description'] = $o['OriginalDescription'] ?? ($o['Description']??null);
+        $subBranch['Overview'] = $o['OriginalOverview'] ?: $o['Overview'];
+        $subBranch['Description'] = $o['OriginalDescription'] ?: $o['Description'];
         $replaceKeys = array_diff(array_keys($branch),["Tag","TagDescription"]);
         foreach ($replaceKeys as $key) {
           $subBranch[$key] = $branch[$key];
@@ -387,18 +374,17 @@ function DownloadApplicationFeed() {
       }
     }
     unset($o['Branch']);
-    if ( $o['OriginalOverview']??null ) {
+    $myTemplates[$o['ID']] = $o;
+    $i = ++$i;
+    if ( $o['OriginalOverview'] ) {
       $o['Overview'] = $o['OriginalOverview'];
       unset($o['OriginalOverview']);
       unset($o['Description']);
     }
-    if ( $o['OriginalDescription']??null ) {
+    if ( $o['OriginalDescription'] ) {
       $o['Description'] = $o['OriginalDescription'];
       unset($o['OriginalDescription']);
     }
-    $myTemplates[$o['ID']] = $o;
-    $i = ++$i;
-
   }
 
   if ( $invalidXML )
@@ -469,7 +455,7 @@ function getConvertedTemplates() {
 
   $myTemplates = [];
   foreach ($templates as $template) {
-    if ( ! ($template['Private']??null) )
+    if ( ! $template['Private'] )
       $myTemplates[] = $template;
   }
   $appCount = count($myTemplates);
@@ -658,7 +644,7 @@ function checkRandomApp($test) {
   global $caSettings;
 
   if ( $test['Name'] == "Community Applications" )  return false;
-  if ( $test['BranchName'] ?? false)                        return false;
+  if ( $test['BranchName'] )                        return false;
   if ( ! $test['Displayable'] )                     return false;
   if ( ! $test['Compatible'] && $caSettings['hideIncompatible'] == "true" ) return false;
   if ( $test['Blacklist'] )                         return false;
@@ -929,7 +915,7 @@ function get_content() {
 
     $name = $template['Name'];
 
-    if ( ($template['Plugin']??null) && file_exists("/var/log/plugins/".basename($template['PluginURL'])) )
+    if ( $template['Plugin'] && file_exists("/var/log/plugins/".basename($template['PluginURL'])) )
       $template['InstallPath'] = $template['PluginURL'];
 
     $template['NewApp'] = $newApp;
@@ -942,7 +928,6 @@ function get_content() {
 
     if ( $displayPrivates && ! $template['Private'] ) continue;
 
-    $template['translatedCategories'] = "";
     if ($filter) {
       # Can't be done at appfeed download time because the translation may or may not exist if the user switches languages
       foreach (explode(" ",$template['Category']) as $trCat) {
@@ -958,13 +943,13 @@ function get_content() {
       if ( strpos($filter,"/") && filterMatch($filter,[$template['Repository']]) )
         $searchResults['nameHit'][] = $template;
       else {
-        if ( filterMatch($filter,[$template['SortName']??null,$template['RepoShort']??null,$template['Language']??null,$template['LanguageLocal']??null,$template['ExtraSearchTerms']??null]) ) {
-          if ( filterMatch($filter,[$template['ExtraSearchTerms']??null]) && ($template['ExtraPriority']??null) )
+        if ( filterMatch($filter,[$template['SortName'],$template['RepoShort'],$template['Language'],$template['LanguageLocal'],$template['ExtraSearchTerms']]) ) {
+          if ( filterMatch($filter,[$template['ExtraSearchTerms']]) && $template['ExtraPriority'] )
             $searchResults['extraHit'][] = $template;
           else
             $searchResults['nameHit'][] = $template;
-        } elseif ( filterMatch($filter,[$template['Author']??null,$template['RepoName']??null,$template['Overview']??null,$template['translatedCategories']??null]) ) {
-          if ( $template['RepoName'] == $caSettings['favourite']??null ) {
+        } elseif ( filterMatch($filter,[$template['Author'],$template['RepoName'],$template['Overview'],$template['translatedCategories']]) ) {
+          if ( $template['RepoName'] == $caSettings['favourite'] ) {
             $searchResults['nameHit'][] = $template;
           } else {
             $searchResults['anyHit'][] = $template;
@@ -994,7 +979,7 @@ function get_content() {
     if ( isset($searchResults['favNameHit']) )
       usort($searchResults['favNameHit'],"mySort");
     else
-     $searchResults['favNameHit'] = [];
+      $searchResults['favNameHit'] = [];
 
     if ( isset($searchResults['extraHit']) )
       usort($searchResults['extraHit'],"mySort");
@@ -1029,12 +1014,6 @@ function get_content() {
 function force_update() {
   global $caPaths, $caSettings;
 
-  if ( $caPaths['localONLY'] ) {
-    exec("rm -rf '{$caPaths['tempFiles']}'");
-    @mkdir($caPaths['templates-community'],0777,true);
-    $GLOBALS['templates'] = [];
-  }
-
   $lastUpdatedOld = readJsonFile($caPaths['lastUpdated-old']);
   debug("old feed timestamp: ".($lastUpdatedOld['last_updated_timestamp'] ?? ""));
   @unlink($caPaths['lastUpdated']);
@@ -1059,9 +1038,9 @@ function force_update() {
       $o['script'] = "$('.onlyShowWithFeed').hide();";
       if ( checkServerDate() )
         $o['data'] =  "<div class='ca_center'><font size='4'><span class='ca_bold'>".tr("Download of appfeed failed.")."</span></font><font size='3'><br><br>Community Applications requires your server to have internet access.  The most common cause of this failure is a failure to resolve DNS addresses.  You can try and reset your modem and router to fix this issue, or set static DNS addresses (Settings - Network Settings) of 208.67.222.222 and 208.67.220.220 and try again.<br><br>Alternatively, there is also a chance that the server handling the application feed is temporarily down.  See also <a href='https://forums.unraid.net/topic/120220-fix-common-problems-more-information/page/2/?tab=comments#comment-1101084' target='_blank'>this post</a> for more information";
-      else
+      else 
         $o['data'] =  "<div class='ca_center'><font size='4'><span class='ca_bold'>".tr("Download of appfeed failed.")."</span></font><font size='3'><br><br>Community Applications requires your server to have internet access.  This could be because it appears that the current date and time of your server is incorrect.  Correct this within Settings - Date And Time.  See also <a href='https://forums.unraid.net/topic/120220-fix-common-problems-more-information/page/2/?tab=comments#comment-1101084' target='_blank'>this post</a> for more information";
-
+      
       $tempFile = @file_get_contents($caPaths['appFeedDownloadError']);
       $downloaded = @file_get_contents($tempFile);
       if (strlen($downloaded) > 100)
@@ -1082,6 +1061,7 @@ function force_update() {
   getConvertedTemplates();
   moderateTemplates();
 
+
   $currentServer = @file_get_contents($caPaths['currentServer']);
   $appFeedTime = readJsonFile($caPaths['lastUpdated-old']);
   $updateTime = tr(date("F",$appFeedTime['last_updated_timestamp']),0).date(" d, Y @ g:i a",$appFeedTime['last_updated_timestamp']);
@@ -1093,9 +1073,10 @@ function force_update() {
 
   if ( version_compare($caSettings['unRaidVersion'],$GLOBALS['templates'][$appfeedCA]['MinVer'],"<") )
     $script .= "addBannerWarning('".tr("Deprecated OS version.  No further updates to Community Applications will be issued for this OS version")."');";
-
-  postReturn(['status'=>"ok",'script'=> $script]);
+  
+    postReturn(['status'=>"ok",'script'=> $script]);
 }
+
 
 ####################################################################################
 # display_content - displays the templates according to view mode, sort order, etc #
@@ -1181,30 +1162,27 @@ function previous_apps() {
 
           $runningflag = false;
           foreach ($info as $installedDocker) {
-            if ( $installedDocker['Name'] == $o['Name'] ) {
-              if ( startsWith(str_replace("library/","",$installedDocker['Image']), $o['Repository']) || startsWith($installedDocker['Image'],$o['Repository']) ) {
+            $installedImage = str_replace("library/","",$installedDocker['Image']);
+            $installedName = $installedDocker['Name'];
+            if ( $installedName == $o['Name'] ) {
+              if ( startsWith($installedImage, $o['Repository']) ) {
                 $runningflag = true;
                 $searchResult = searchArray($file,'Repository',$o['Repository']);
                 if ( $searchResult === false) {
                   $searchResult = searchArray($file,'Repository',explode(":",$o['Repository'])[0]);
                 }
                 if ( $searchResult !== false ) {
-                  if ( ($o['TemplateURL'] ?? false) ) {
-                    if ( ($file[$searchResult]['TemplateURL']??INF) != $o['TemplateURL']) {
-                      $search = searchArray($file,'TemplateURL',$o['TemplateURL']);
-                      $searchResult = $search === false ? $searchResult : $search;
-                    }
-                  }
                   $tempPath = $o['InstallPath'];
                   $containerID = $file[$searchResult]['ID'];
                   $tmpOvr = $o['Overview'];
                   $o = $file[$searchResult];
-                  $o['Name'] = $installedDocker['Name'];
+                  $o['Name'] = $installedName;
                   $o['Overview'] = $tmpOvr;
                   $o['CardDescription'] = $tmpOvr;
                   $o['InstallPath'] = $tempPath;
-                  $o['SortName'] = str_replace("-"," ",$o['Name']);
-                  $o['Repository'] = $installedDocker['Image'];
+                  $o['SortName'] = str_replace("-"," ",$installedName);
+                  if ( $installedName !== $file[$searchResult]['Name'] )
+                    $o['NoPin'] = true;  # This is renamed and effectively outside of CA's control
                 } else {
                   $runningFlag = true;
                 }
@@ -1218,9 +1196,6 @@ function previous_apps() {
 
             if ( $installed == "action" ) {
               $tmpRepo = strpos($o['Repository'],":") ? $o['Repository'] : $o['Repository'].":latest";
-              if ( ! strpos($tmpRepo,"/") ) {
-                $tmpRepo = "library/$tmpRepo";
-              }
 
               if ( $tmpRepo && ($dockerUpdateStatus[$tmpRepo]['status'] ?? null) == "false" ) {
                 $o['actionCentre'] = true;
@@ -1239,7 +1214,7 @@ function previous_apps() {
                 }
               }
 
-              if ( !$o['Blacklist'] && !$o['Deprecated'] && !($o['actionCentre']??null)  )
+              if ( !$o['Blacklist'] && !$o['Deprecated'] && !$o['actionCentre']  )
                 continue;
             }
             if ( $installed == "action" )
@@ -1265,27 +1240,26 @@ function previous_apps() {
 
           $flag = false;
           foreach ($info as $installedDocker) {
-            if ( startsWith(str_replace("library/","",$installedDocker['Image']), $o['Repository']) || startsWith($installedDocker['Image'],$o['Repository']) ) {
-              if ( $installedDocker['Name'] == $o['Name'] ) {
+            $installedImage = $installedDocker['Image'];
+            $installedImage = str_replace("library/","",$installedImage);
+            $installedName = $installedDocker['Name'];
+            if ( startsWith($installedImage, $o['Repository']) ) {
+              if ( $installedName == $o['Name'] ) {
                 $flag = true;
                 continue;
               }
             }
           }
-          $foundViaURL = false;
           if ( ! $flag ) {
-            $foundflag = false;
             $testRepo = explode(":",$o['Repository'])[0];
     # now associate the template back to a template in the appfeed
-            if ($o['TemplateURL'] ?? false ) {
-              $search = searchArray($file,'TemplateURL',$o['TemplateURL']);
-              if ( $search !== false ) {
-                $foundflag = true;
 
+            foreach ($file as $appTemplate) {
+              if (startsWith($appTemplate['Repository'],$testRepo)) {
                 $tempPath = $o['InstallPath'];
                 $tempName = $o['Name'];
                 $tempOvr = $o['Overview'];
-                $o = $file[$search];
+                $o = $appTemplate;
                 $o['Overview'] = $tempOvr;
                 $o['Description'] = $tempOvr;
                 $o['CardDescription'] = $tempOvr;
@@ -1294,26 +1268,7 @@ function previous_apps() {
                 $o['Name'] = $tempName;
                 $o['SortName'] = str_replace("-"," ",$o['Name']);
                 $o['NoPin'] = true;
-              }
-
-            }
-            if ( !$foundflag ) {
-              foreach ($file as $appTemplate) {
-                if (startsWith($appTemplate['Repository'],$testRepo)) {
-                  $tempPath = $o['InstallPath'];
-                  $tempName = $o['Name'];
-                  $tempOvr = $o['Overview'];
-                  $o = $appTemplate;
-                  $o['Overview'] = $tempOvr;
-                  $o['Description'] = $tempOvr;
-                  $o['CardDescription'] = $tempOvr;
-                  $o['Removable'] = true;
-                  $o['InstallPath'] = $tempPath;
-                  $o['Name'] = $tempName;
-                  $o['SortName'] = str_replace("-"," ",$o['Name']);
-                  $o['NoPin'] = true;
-                  break;
-                }
+                break;
               }
             }
 
@@ -1328,7 +1283,7 @@ function previous_apps() {
   if ( $installed == "true" || $installed == "action" ) {
     if ( ! $filter || $filter == "plugins" ) {
       foreach ($file as $template) {
-        if ( ! ($template['Plugin']??null) ) continue;
+        if ( ! $template['Plugin'] ) continue;
 
         $filename = pathinfo($template['Repository'],PATHINFO_BASENAME);
 
@@ -1338,7 +1293,7 @@ function previous_apps() {
 
           if ( $installed == "action" && $template['PluginURL'] && $template['Name'] !== "Community Applications") {
             $installedVersion = plugin("version","/var/log/plugins/$filename");
-            if ( ( strcmp($installedVersion,$template['pluginVersion']) < 0 || ($template['UpdateAvailable']??null)) ) {
+            if ( ( strcmp($installedVersion,$template['pluginVersion']) < 0 || $template['UpdateAvailable']) ) {
               $template['actionCentre'] = true;
               $template['UpdateAvailable'] = true;
               $updateCount++;
@@ -1350,7 +1305,7 @@ function previous_apps() {
             }
           }
 
-          if ( $installed == "action" && !$template['Blacklist'] && !$template['Deprecated'] && $template['Compatible'] && !($template['actionCentre']??null) )
+          if ( $installed == "action" && !$template['Blacklist'] && !$template['Deprecated'] && $template['Compatible'] && !$template['actionCentre'] )
             continue;
           if ( $installed == "action" )
             $template['actionCentre'] = true;
@@ -1592,10 +1547,8 @@ function statistics() {
     if ( $template['Blacklist']??false ) $statistics['blacklist']++;
 
     if ( ($template['Private']??false) && ! ($template['Blacklist']??false)) {
-      if ( ! ($caSettings['hideDeprecated'] == 'true' && ($template['Deprecated']??false)) ) {
+      if ( ! ($caSettings['hideDeprecated'] == 'true' && ($template['Deprecated']??false)) )
         $statistics['private']++;
-        continue;
-      }
     }
 
     if ( ($template['Official']??false) && ! ($template['Blacklist']??false) )
@@ -1784,7 +1737,6 @@ function populateAutoComplete() {
   }
   $autoComplete = array_map(function($x){return str_replace(":","",tr($x['Cat']));},readJsonFile($caPaths['categoryList']));
   foreach ($templates as $template) {
-    $template = addMissingVars($template);
     if ( $template['RepoTemplate'] )
       continue;
     if ( ! $template['Blacklist'] && ! ($template['Deprecated'] && $caSettings['hideDeprecated'] == "true") && ($template['Compatible'] || $caSettings['hideIncompatible'] != "true") || ($template['Featured']??false) ) {
@@ -1875,7 +1827,7 @@ function get_categories() {
     }
     $templates = &$GLOBALS['templates'];
     foreach ($templates as $template) {
-      if ( ($template['Private']??null) == true && ! $template['Blacklist']) {
+      if ($template['Private'] == true && ! $template['Blacklist']) {
         $cat .= "<li class='categoryMenu caMenuItem nonDockerSearch' data-category='PRIVATE'>".tr("Private Apps")."</li>";
         break;
       }
@@ -1924,24 +1876,12 @@ function createXML() {
       return;
     }
     $template = $templates[$index];
-    if ( $template['OriginalOverview'] ?? false )
+    if ( $template['OriginalOverview'] )
       $template['Overview'] = $template['OriginalOverview'];
-    if ( $template['OriginalDescription'] ?? false )
+    if ( $template['OriginalDescription'] )
       $template['Description'] = $template['OriginalDescription'];
-
     $template['Icon'] = $template["Icon-{$caSettings['dynamixTheme']}"] ?? $template['Icon'];
-
-// switch from br0 to eth0 if necessary
-    if ( isset($template['Networking']['Mode']) || isset($template['Network']) ) {
-      $mode =$template['Network'] = $template['Network'] ?? $template['Networking']['Mode'];
-      $mode = strtolower($template['Network']);
-      if ( $mode && $mode !== "host" && $mode !== "bridge" ) {
-        if ( ! file_exists("/sys/class/net/$mode") ) {
-          $template['Network'] = file_exists('/sys/class/net/br0') ? 'br0' : 'eth0';
-          unset($template['Networking']['Mode']);
-        }
-      }
-    }
+    
 // Handle paths directly referencing disks / poola that aren't present in the user's system, and replace the path with the first disk present
     $unRaidDisks = parse_ini_file($caPaths['disksINI'],true);
 
@@ -1980,7 +1920,7 @@ function createXML() {
       $template['Data']['Volume'] = $testarray;
     }
 
-    if ( $template['Config'] ?? false ) {
+    if ( $template['Config'] ) {
       $testarray = $template['Config'] ?: [];
       if (!($testarray[0]??false)) $testarray = [$testarray];
 
@@ -2071,7 +2011,7 @@ function createXML() {
     if ( empty($template['Config']) ) // handles extra garbage entry being created on templates that are v1 only
       unset($template['Config']);
     $xml = makeXML($template);
-    @mkdir(dirname($xmlFile),0777,true);
+    @mkdir(dirname($xmlFile));
     ca_file_put_contents($xmlFile,$xml);
   }
   postReturn(["status"=>"ok","cache"=>$cacheVolume ?? ""]);
@@ -2293,8 +2233,7 @@ function search_dockerhub() {
   $communityTemplates = &$GLOBALS['templates'];
   $filter = str_replace(" ","%20",$filter);
   $filter = str_replace("/","%20",$filter);
-  $jsonPage = download_url("https://registry.hub.docker.com/v1/search?q=$filter&page=$pageNumber");
-  //$jsonPage = shell_exec("curl -s -X GET 'https://registry.hub.docker.com/v1/search?q=$filter&page=$pageNumber'");
+  $jsonPage = shell_exec("curl -s -X GET 'https://registry.hub.docker.com/v1/search?q=$filter&page=$pageNumber'");
   $pageresults = json_decode($jsonPage,true);
   $num_pages = $pageresults['num_pages'];
 
@@ -2360,7 +2299,7 @@ function getLastUpdate($ID) {
     return "Unknown";
 
   $app = $templates[$index];
-  if ( ($app['PluginURL']??null) || ($app['LanguageURL']??null) )
+  if ( $app['PluginURL'] || $app['LanguageURL'] )
     return;
 
   if ( strpos($app['Repository'],"ghcr.io") !== false || strpos($app['Repository'],"cr.hotio.dev") !== false || strpos($app['Repository'],"lscr.io") !== false) { // try dockerhub for info on ghcr stuff
@@ -2468,16 +2407,18 @@ function enableActionCentre() {
 
       $runningflag = false;
       foreach ($info as $installedDocker) {
-        if ( $installedDocker['Name'] == $o['Name'] ) {
-          if ( startsWith(str_replace("library/","",$installedDocker['Image']), $o['Repository']) || startsWith($installedDocker['Image'],$o['Repository'])  ) {
+        $installedImage = str_replace("library/","",$installedDocker['Image']);
+        $installedName = $installedDocker['Name'];
+        if ( $installedName == $o['Name'] ) {
+          if ( startsWith($installedImage, $o['Repository']) ) {
             $runningflag = true;
             $searchResult = searchArray($file,'Repository',$o['Repository']);
             if ( $searchResult === false) {
               $searchResult = searchArray($file,'Repository',explode(":",$o['Repository'])[0]);
             }
-            if ( $searchResult !== false )
+            if ( $searchResult !== false ) 
               $o = $file[$searchResult];
-
+              
             if ( $searchResult === false ) {
               $runningFlag = true;
               if ( $extraBlacklist[$o['Repository']] ?? false ) {
@@ -2507,7 +2448,7 @@ function enableActionCentre() {
           }
         }
 
-        if ( !($o['Blacklist']??false) && !($o['Deprecated']??false) && !($o['actionCentre']??false)  )
+        if ( !$o['Blacklist'] && !$o['Deprecated'] && !$o['actionCentre']  )
           continue;
 
         $displayed[] = $o;
@@ -2517,7 +2458,7 @@ function enableActionCentre() {
   }
 # Now work on plugins
   foreach ($file as $template) {
-    if ( ! ($template['Plugin']??null) ) continue;
+    if ( ! $template['Plugin'] ) continue;
 
     if ( $template['Name'] == "Community Applications" )
       continue;
@@ -2531,15 +2472,15 @@ function enableActionCentre() {
         continue;
 
       $installedVersion = plugin("version","/var/log/plugins/$filename");
-      if ( ( strcmp($installedVersion,$template['pluginVersion']) < 0 || ($template['UpdateAvailable']??null) ) ) {
+      if ( ( strcmp($installedVersion,$template['pluginVersion']) < 0 || $template['UpdateAvailable']) ) {
         $template['actionCentre'] = true;
       }
-      if ( ! ($template['actionCentre']??null) && is_file("/tmp/plugins/$filename") ) {
+      if ( ! $template['actionCentre'] && is_file("/tmp/plugins/$filename") ) {
         if ( strcmp($installedVersion,plugin("version","/tmp/plugins/$filename")) < 0 )
           $template['actionCentre'] = true;
       }
 
-      if ( !$template['Blacklist'] && !$template['Deprecated'] && $template['Compatible'] && !($template['actionCentre']??null) )
+      if ( !$template['Blacklist'] && !$template['Deprecated'] && $template['Compatible'] && !$template['actionCentre'] )
         continue;
       $displayed[] = $template;
       break;

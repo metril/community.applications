@@ -1,7 +1,7 @@
 <?PHP
 ###############################################################
 #                                                             #
-# Community Applications copyright 2015-2024, Andrew Zawadzki #
+# Community Applications copyright 2015-2023, Andrew Zawadzki #
 #                   Licenced under GPLv2                      #
 #                                                             #
 ###############################################################
@@ -29,11 +29,8 @@ function tr($string,$ret=true) {
 }
 
 ?>
-<!DOCTYPE html>
 <body bgcolor='white'>
-<style>
-<?include "/$docroot/plugins/community.applications/skins/Narrow/css.php"?>
-</style>
+<link type="text/css" rel="stylesheet" href='<?autov("/plugins/community.applications/skins/Narrow/css.php")?>'>
 <style>
 p {margin-left:2rem;margin-right:2rem;}
 body {margin-left:1.5rem;margin-right:1.5rem;margin-top:1.5rem;font-family:clear-sans;font-size:0.9rem;}
@@ -115,9 +112,9 @@ switch ($_GET['arg1']) {
       $template['Repository'] = str_replace(":latest","",$template['Repository']);
       $count = 0;
       foreach ($templates as $searchTemplates) {
-        if ( $template['Language'] ?? false) continue;
+        if ( $template['Language'] ) continue;
         if ( (str_replace(["lscr.io/","ghcr.io/"],"",$template['Repository']) == str_replace(":latest","",str_replace(["lscr.io/","ghcr.io/"],"",$searchTemplates['Repository'])))  ) {
-          if ( ($searchTemplates['BranchName']??false) || ($searchTemplates['Blacklist']??false) || ($searchTemplates['Deprecated']??false) ) {
+          if ( $searchTemplates['BranchName'] || $searchTemplates['Blacklist'] || $searchTemplates['Deprecated']) {
             continue;
           }
           $count++;

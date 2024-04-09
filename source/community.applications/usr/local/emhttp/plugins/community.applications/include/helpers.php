@@ -1,7 +1,7 @@
 <?PHP
 ###############################################################
 #                                                             #
-# Community Applications copyright 2015-2024, Andrew Zawadzki #
+# Community Applications copyright 2015-2023, Andrew Zawadzki #
 #                   Licenced under GPLv2                      #
 #                                                             #
 ###############################################################
@@ -65,17 +65,13 @@ function writeJsonFile($filename,$jsonArray) {
 }
 
 function ca_file_put_contents($filename,$data,$flags=0) {
-  $result = @file_put_contents($filename."~",$data,$flags);
-  if ( $result === strlen($data) ) {
-    @rename($filename."~",$filename);
-  }
-  
+  $result = @file_put_contents($filename,$data,$flags);
+
   if ( $result === false ) {
-    @unlink($filename."~");
     debug("Failed to write to $filename");
     $GLOBALS['script'] = "alert('Failed to write to ".htmlentities($filename,ENT_QUOTES)."');";
   }
-  return ($result === strlen($data)) ? strlen($data) : false;
+  return $result;
 }
 function download_url($url, $path = "", $bg = false, $timeout = 45) {
   global $caSettings, $caPaths;
@@ -163,8 +159,6 @@ function last_str_replace($haystack, $needle, $replace) {
 function mySort($a, $b) {
   global $sortOrder;
 
-  $a['trendDelta'] = $a['trendDelta'] ?? null;
-  $b['trendDelta'] = $b['trendDelta'] ?? null;
   if ( $sortOrder['sortBy'] == "Name" )
     $sortOrder['sortBy'] = "SortName";
   if ( $sortOrder['sortBy'] != "downloads" && $sortOrder['sortBy'] != "trendDelta") {
@@ -211,7 +205,7 @@ function searchArray($array,$key,$value,$startingIndex=0) {
   $result = false;
   if (is_array($array) && count($array) ) {
     for ($i = $startingIndex; $i <= max(array_keys($array)); $i++) {
-      if ( ($array[$i][$key] ?? null) == $value ) {
+      if ( $array[$i][$key] == $value ) {
         $result = $i;
         break;
       }
@@ -225,9 +219,9 @@ function searchArray($array,$key,$value,$startingIndex=0) {
 function fixTemplates($template) {
   global $statistics, $caSettings;
 
-  if ( ! $template['MinVer'] ) $template['MinVer'] = ($template['Plugin']??false) ? "6.1" : "6.0";
-  if ( ! ($template['Date']??null) ) $template['Date'] = (is_numeric($template['DateInstalled']??null)) ? $template['DateInstalled'] : 0;
-  $template['Date'] = max($template['Date']??null,$template['FirstSeen']??null);
+  if ( ! $template['MinVer'] ) $template['MinVer'] = $template['Plugin'] ? "6.1" : "6.0";
+  if ( ! $template['Date'] ) $template['Date'] = (is_numeric($template['DateInstalled'])) ? $template['DateInstalled'] : 0;
+  $template['Date'] = max($template['Date'],$template['FirstSeen']);
   if ($template['Date'] == 1) $template['Date'] = null;
   if ( ($template['Date'] == $template['FirstSeen']) && ( $template['FirstSeen'] >= 1538357652 )) {# 1538357652 is when the new appfeed first started
     $template['BrandNewApp'] = true;
@@ -235,22 +229,24 @@ function fixTemplates($template) {
   }
 
   # fix where template author includes <Blacklist> or <Deprecated> entries in template (CA used booleans, but appfeed winds up saying "FALSE" which equates to be true
-  $template['Deprecated'] = filter_var($template['Deprecated']??null,FILTER_VALIDATE_BOOLEAN);
-  $template['Blacklist'] = filter_var($template['Blacklist']??null,FILTER_VALIDATE_BOOLEAN);
+  $template['Deprecated'] = filter_var($template['Deprecated'],FILTER_VALIDATE_BOOLEAN);
+  $template['Blacklist'] = filter_var($template['Blacklist'],FILTER_VALIDATE_BOOLEAN);
 
-  if ( ($template['DeprecatedMaxVer']??null) && version_compare($caSettings['unRaidVersion'],$template['DeprecatedMaxVer'],">") )
+  if ( $template['DeprecatedMaxVer'] && version_compare($caSettings['unRaidVersion'],$template['DeprecatedMaxVer'],">") )
     $template['Deprecated'] = true;
 
-  if ( $template['Config']??null ) {
-    if ( $template['Config']['@attributes'] ?? false ) {
-      if (preg_match("/^(Container Path:|Container Port:|Container Label:|Container Variable:|Container Device:)/",$template['Config']['@attributes']['Description']) ) {
-        $template['Config']['@attributes']['Description'] = "";
-      }
-    } else {
-      if (is_array($template['Config'])) {
-        foreach ($template['Config'] as &$config) {
-          if (preg_match("/^(Container Path:|Container Port:|Container Label:|Container Variable:|Container Device:)/",$config['@attributes']['Description']??"") ) {
-            $config['@attributes']['Description'] = "";
+  if ( version_compare($caSettings['unRaidVersion'],"6.10.0-beta4",">") ) {
+    if ( $template['Config'] ) {
+      if ( $template['Config']['@attributes'] ?? false ) {
+        if (preg_match("/^(Container Path:|Container Port:|Container Label:|Container Variable:|Container Device:)/",$template['Config']['@attributes']['Description']) ) {
+          $template['Config']['@attributes']['Description'] = "";
+        }
+      } else {
+        if (is_array($template['Config'])) {
+          foreach ($template['Config'] as &$config) {
+            if (preg_match("/^(Container Path:|Container Port:|Container Label:|Container Variable:|Container Device:)/",$config['@attributes']['Description']??"") ) {
+              $config['@attributes']['Description'] = "";
+            }
           }
         }
       }
@@ -313,7 +309,7 @@ function fixAttributes(&$template,$attribute) {
 function versionCheck($template) {
   global $caSettings;
 
-  if ( $template['IncompatibleVersion']??null ) {
+  if ( $template['IncompatibleVersion'] ) {
     if ( ! is_array($template['IncompatibleVersion']) ) {
       $incompatible[] = $template['IncompatibleVersion'];
     } else {
@@ -324,8 +320,8 @@ function versionCheck($template) {
     }
   }
 
-  if ( ($template['MinVer']??null) && ( version_compare($template['MinVer'],$caSettings['unRaidVersion']) > 0 ) ) return false;
-  if ( ($template['MaxVer']??null) && ( version_compare($template['MaxVer'],$caSettings['unRaidVersion']) < 0 ) ) return false;
+  if ( $template['MinVer'] && ( version_compare($template['MinVer'],$caSettings['unRaidVersion']) > 0 ) ) return false;
+  if ( $template['MaxVer'] && ( version_compare($template['MaxVer'],$caSettings['unRaidVersion']) < 0 ) ) return false;
   return true;
 }
 ###############################################
@@ -384,16 +380,16 @@ function moderateTemplates() {
   if ( ! $templates ) return;
   foreach ($templates as $template) {
     $template['Compatible'] = versionCheck($template);
-    if ( ($template['MaxVer']??null) && version_compare($template['MaxVer'],$caSettings['unRaidVersion']) < 0 )
+    if ( $template['MaxVer'] && version_compare($template['MaxVer'],$caSettings['unRaidVersion']) < 0 )
       $template['Featured'] = false;
     if ( $template['CAMinVer'] ?? false ) {
       $template['UninstallOnly'] = version_compare($template['CAMinVer'],$caSettings['unRaidVersion'],">=");
     }
 
-    if ( ($template["DeprecatedMaxVer"]??null) && version_compare($caSettings['unRaidVersion'],$template["DeprecatedMaxVer"],">") )
+    if ( $template["DeprecatedMaxVer"] && version_compare($caSettings['unRaidVersion'],$template["DeprecatedMaxVer"],">") )
       $template['Deprecated'] = true;
 
-    $template['ModeratorComment'] = $template['CaComment'] ?? ($template['ModeratorComment']??null);
+    $template['ModeratorComment'] = $template['CaComment'] ?: $template['ModeratorComment'];
     $o[] = $template;
   }
   writeJsonFile($caPaths['community-templates-info'],$o);
@@ -433,7 +429,7 @@ function pluginDupe() {
   $pluginList = [];
   $dupeList = [];
   foreach ($GLOBALS['templates'] as $template) {
-    if ( ($template['Plugin']??null) ) {
+    if ( $template['Plugin'] ) {
       if ( ! isset($pluginList[basename($template['Repository'])]) )
         $pluginList[basename($template['Repository'])] = 0;
       $pluginList[basename($template['Repository'])]++;
@@ -690,18 +686,20 @@ function getAllInfo($force=false) {
 function debug($str) {
   global $caSettings, $caPaths;
 
-  if ( ! is_file($caPaths['logging']) ) {
-    touch($caPaths['logging']);
-    $caVersion = plugin("version","/var/log/plugins/community.applications.plg");
+  if ( $caSettings['debugging'] == "yes" ) {
+    if ( ! is_file($caPaths['logging']) ) {
+      touch($caPaths['logging']);
+      $caVersion = plugin("version","/var/log/plugins/community.applications.plg");
 
-    debug("Community Applications Version: $caVersion");
-    debug("Unraid version: {$caSettings['unRaidVersion']}");
-    debug("MD5's: \n".shell_exec("cd /usr/local/emhttp/plugins/community.applications && md5sum -c ca.md5"));
-    $lingo = $_SESSION['locale'] ?? "en_US";
-    debug("Language: $lingo");
-    debug("Settings:\n".print_r($caSettings,true));
+      debug("Community Applications Version: $caVersion");
+      debug("Unraid version: {$caSettings['unRaidVersion']}");
+      debug("MD5's: \n".shell_exec("cd /usr/local/emhttp/plugins/community.applications && md5sum -c ca.md5"));
+      $lingo = $_SESSION['locale'] ?? "en_US";
+      debug("Language: $lingo");
+      debug("Settings:\n".print_r($caSettings,true));
+    }
+    @file_put_contents($caPaths['logging'],date('Y-m-d H:i:s')."  $str\n",FILE_APPEND); //don't run through CA wrapper as this is non-critical
   }
-  @file_put_contents($caPaths['logging'],date('Y-m-d H:i:s')."  $str\n",FILE_APPEND); //don't run through CA wrapper as this is non-critical
 }
 ########################################
 # Gets the default ports in a template #
@@ -715,7 +713,7 @@ function portsUsed($template) {
   if ( is_array($template['Config']) ) {
     foreach ($template['Config'] as $config) {
       if ( $config['@attributes']['Type'] !== "Port" )
-        continue; 
+        continue;
       $portsUsed[] = $config['value'] ?: $config['@attributes']['Default'];
     }
   }

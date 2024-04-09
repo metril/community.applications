@@ -1,7 +1,7 @@
 <?PHP
 ###############################################################
 #                                                             #
-# Community Applications copyright 2015-2024, Andrew Zawadzki #
+# Community Applications copyright 2015-2023, Andrew Zawadzki #
 #                   Licenced under GPLv2                      #
 #                                                             #
 ###############################################################
@@ -38,12 +38,10 @@ $caPaths['community-templates-allSearchResults']= $caPaths['tempFiles']."/allSea
 $caPaths['community-templates-catSearchResults']= $caPaths['tempFiles']."/catSearchResults.json";
 $caPaths['startupDisplayed']                    = $caPaths['tempFiles']."/startupDisplayed";
 $caPaths['repositoriesDisplayed']               = $caPaths['tempFiles']."/repositoriesDisplayed.json";
-$caPaths['localONLY']                           = false;    /* THIS MUST NOT BE SET TO TRUE WHEN DOING A RELEASE */
 $caPaths['application-feed']                    = "https://raw.githubusercontent.com/Squidly271/AppFeed/master/applicationFeed.json";
 $caPaths['application-feed-last-updated']       = "https://raw.githubusercontent.com/Squidly271/AppFeed/master/applicationFeed-lastUpdated.json";
 $caPaths['application-feedBackup']              = "https://dnld.lime-technology.com/appfeed/master/applicationFeed.json";
 $caPaths['application-feed-last-updatedBackup'] = "https://dnld.lime-technology.com/appfeed/master/applicationFeed-lastUpdated.json";
-$caPaths['application-feed-local']              = "/tmp/GitHub/AppFeed/applicationFeed.json";
 $caPaths['appFeedDownloadError']                = $caPaths['tempFiles']."/downloaderror.txt";
 $caPaths['categoryList']                        = $caPaths['tempFiles']."/categoryList.json";
 $caPaths['repositoryList']                      = $caPaths['tempFiles']."/repositoryList.json";
@@ -93,7 +91,6 @@ $caPaths['dockerSearchInstall']                 = $caPaths['tempFiles']."/docker
 $caPaths['dockerSearchActive']                  = $caPaths['tempFiles']."/dockerSearchActive";
 $caPaths['dockerConvertFlash']                  = $dockerManPaths['templates-user']."/my-CA_TEST_CONTAINER_DOCKERHUB.xml";
 $caPaths['pluginPending']                       = "/tmp/plugins/pluginPending/";
-$caPaths['phpErrorSettings']                    = "/etc/php.d/errors-php.ini";
 
 $dynamixSettings = parse_plugin_cfg("dynamix");
 $caPaths['SpotlightIcon']					 							= "https://github.com/Squidly271/community.applications/raw/master/webImages/spotlight_{$dynamixSettings['theme']}.png";

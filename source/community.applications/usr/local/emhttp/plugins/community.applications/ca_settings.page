@@ -5,7 +5,7 @@ Icon="users"
 <?
 ###############################################################
 #                                                             #
-# Community Applications copyright 2015-2024, Andrew Zawadzki #
+# Community Applications copyright 2015-2023, Andrew Zawadzki #
 #                   Licenced under GPLv2                      #
 #                                                             #
 ###############################################################
@@ -27,7 +27,6 @@ function tr($string,$ret=false) {
   else
     echo $string;
 }
-
 ?>
 <script>
 $(function() {
@@ -110,7 +109,6 @@ _(Allow CA to send any emergency notifications)_:
 > <?tr("2. Critical security vulnerabilities within Unraid OS");?><br>
 > <?tr("3. Any installed applications which may seriously hinder the operation of your server");?>
 
-<!--
 _(Save CA debugging information)_:
 : <select name='debugging' size='1'>
   <?=mk_option($cfg['debugging'],"yes",tr("Yes",true))?>
@@ -118,7 +116,6 @@ _(Save CA debugging information)_:
   </select>
   
 > <?tr("Only enable this when advised to from the author of Community Applications")?>
--->
 
 _(Enable developer mode)_:
 : <select name='dev' size='1'>
@@ -128,9 +125,10 @@ _(Enable developer mode)_:
   
 > <?tr("This unlocks some extra features within CA generally only used by developers.  Not recommended to enable")?>
 
+<input id='debugging' type='button' onclick='debug();' value='DOWNLOAD LOG' style='display:none;'></input>
 
 &nbsp;
-: <input id='debugging' type='button' onclick='debug();' value='DOWNLOAD LOG' style='display:none;'></input><input type="submit" name="#apply" value="<?tr("Apply");?>" id='Apply'><input type="button" id="DONE" value="<?tr("Done");?>" onclick="done()">
+: <input type="submit" name="#apply" value="<?tr("Apply");?>" id='Apply'><input type="button" id="DONE" value="<?tr("Done");?>" onclick="done()">
 
 <center><a href="https://forums.unraid.net/topic/38582-plug-in-community-applications/" target="_blank"><?tr("Support Thread");?></a></center>
 

@@ -1,7 +1,7 @@
 <?php
 ###############################################################
 #                                                             #
-# Community Applications copyright 2015-2024, Andrew Zawadzki #
+# Community Applications copyright 2015-2023, Andrew Zawadzki #
 #                   Licenced under GPLv2                      #
 #                                                             #
 ###############################################################
@@ -64,7 +64,7 @@ switch ($theme) {
     $templateHoverBackground = "#edeaef";
     $templateFavourite = "#e0e0e0";
     $hrColor = "#606e7f";
-    $borderColor = "#9794a7";
+    $border = "#9794a7";
     $watermarkColor = "rgba(96, 110, 127, 0.1)";
     $aColor = "#486dba";
     $sidebarBackground = "#edeaef";
@@ -82,7 +82,7 @@ switch ($theme) {
     $templateHoverBackground = "#0c0f0b";
     $templateFavourite = "#2b2b2b";
     $hrColor = "#606e7f";
-    $borderColor = "#606e7f";
+    $border = "#606e7f";
     $watermarkColor = "rgba(96, 110, 127, 0.1)";
     $aColor = "#00b8d6";
     $sidebarBackground = "#121510";
@@ -122,7 +122,6 @@ a {color:<?=$aColor?>;}
 .additionalRequirements{margin-left:2rem;}
 .additionalRequirementsHeader{font-size:1.5rem;color:#d67777;font-weight:bold;}
 .appIconsPopUp{font-size:2rem !important;cursor:pointer;padding-left:.5rem;padding-right:.5rem;color:default;display:inline-block;margin-right:5rem;}
-td.appIconsPopUp{white-space:normal;height:unset;}
 .appIconsPopUp:hover{text-decoration:none;color:<?=$unRaid66color?>;}
 a.appIconsPopUp{text-decoration:none;color:inherit;}
 .appDocker{float:right;font-size:2rem;opacity:0.7;margin-left:1rem;}
@@ -284,7 +283,6 @@ img.displayIcon{height:6.4rem;width:6.4rem;border-radius:1rem 1rem 1rem 1rem;}
 .favCardBackground{float:right;color:#bb0000;padding-top:.25rem;margin-left:1rem;}
 .favCardBackground::before{content:"\f004";font-family:fontAwesome;}
 .featuredIncompatible{color:#FF8C2F;}
-.greenCardBackground{clip-path: polygon(0 0,100% 0, 100% 100%);background-color: #008100;top:0px;height:9rem;width:9rem;position: relative;left:-10rem;margin-right:-9rem;}
 .homeMore{color:<?=$unRaid66color?>;cursor:pointer;}
 .homeMore:hover{color:#d67777;}
 .homespotlightIconArea{display: inline-block;position: relative;top: -25rem;left: 24rem;cursor:pointer;}
@@ -360,8 +358,9 @@ img.popupAuthorIcon{height:7.2rem;width:7.2rem;border-radius:1rem 1rem 1rem 1rem
 i.popupIcon{color:#626868;font-size:10rem;padding-left:1rem;padding-top:2.2rem;}
 img.popupIcon{width:10rem;height:10rem;padding:0.3rem;margin-top:2.2rem;border-radius:1rem 1rem 1rem 1rem;}
 .popupInfo{position:absolute;top:10rem;left:15rem;}
-.popupInfoLeft{margin-right:10px;margin-left:10px;overflow:hidden;}
-.popupInfoSection{line-height:2rem;font-size:1.5rem;}
+.popupInfoLeft{min-width:45%;max-width:45%;width:50rem;float:left;display:inline-block;margin-right:10px;}
+.popupInfoRight{min-width:45%;max-width:45%;float:left;display:inline-block;}
+.popupInfoSection{line-height:2rem;font-size:1.5rem;display:inline-block;}
 .popUpLink{cursor:pointer;color:<?$aColor?>;}
 a.popUpLink{text-decoration:none;}
 a.popUpLink:hover{color:<?=$unRaid66color?>;}
@@ -372,7 +371,7 @@ a.popUpLink:hover{color:<?=$unRaid66color?>;}
 .popupTable td {width:30%;text-align:left;}
 .popupTable{font-size:1.5rem;width:55rem;margin-top:0px;margin-left:auto;}
 .popupTableLeft{vertical-align:top;padding-right:15px;}
-.popupTableRight{overflow:hidden;}
+.popupTableRight{max-width:20rem;overflow:hidden;}
 .popupTitle{margin:auto;text-align:center;font-weight:bold;font-size:2rem;line-height}
 .popup{margin:1.5rem;margin-top:-2rem;}
 a.popup-donate{text-decoration:none;font-style:italic;color:black;font-size:1.5rem;}
@@ -430,6 +429,7 @@ ul.subCategory{list-style-type:none;margin-left:2rem;padding:0px;cursor:pointer;
 .supportPopup{margin-right:1rem;font-size:1.5rem;line-height:2rem;cursor:pointer;display:inline-block;background-position: 0 0;  background-size: 100% 100%;  border-radius: 15px;  padding: 1px 10px 1px 10px;border-style:solid;border-width:1px;}
 .supportPopup:hover{background-color:<?=$unRaid66color?>;}
 .sweet-alert table{margin-top:0px}
+table tbody td {line-height:1.8rem;}
 table {background-color:transparent;}
 #templates_content{overflow-x:hidden;margin-bottom:3rem;}
 .templateErrors{font-size:2.5rem;margin-top:2rem;}

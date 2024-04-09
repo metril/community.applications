@@ -2,91 +2,17 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "community.applications">
 <!ENTITY author    "Andrew Zawadzki">
-<!ENTITY version   "2024.04.06">
-<!ENTITY md5       "658faf60b504d93f7f61d11eb7a63bd4">
+<!ENTITY version   "2023.09.30">
+<!ENTITY md5       "948d560a8176de2abb8d12019e03fc65">
 <!ENTITY launch    "Apps">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "Squidly271/community.applications">
 <!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/master/plugins/&name;.plg">
 ]>
 
-<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0" support="https://forums.unraid.net/topic/38582-plug-in-community-applications" icon="users">
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.9.0" support="https://forums.unraid.net/topic/38582-plug-in-community-applications" icon="users">
 
 <CHANGES>
-###2024.04.06
-- Fixed: Edge case of installing an application where a duplicate template was present and the other template was deprecated could result in CA thinking the deprecated template was installed
-- Fixed: CSS fixes for Branch selection on 6.13+
-- Changed: Support 6.13 proxies.  (Fallback to CA's existing proxy support)
-
-###2024.03.17
-- Fixed: PHP8 errors
-- Fixed: Placement of download log button in settings incorrect in 6.13+
-- Fixed: Apps installed using a different tag than what author specified would appear within Installed Apps with incorrect Action items
-
-###2024.03.10
-- Fixed: DockerHub searches wouldn't use CA's proxy if set
-- Fixed: CSS issues on sidebar
-- Changed: Always use atomic writes
-
-###2024.03.02
-- Fixed: PHP errors (and CSS) when running Azure / Gray themes
-- Fixed: Certain code related to appfeed wasn't running and other code was running twice
-- Fixed: PHP errors in Statistics
-
-###2024.02.10b
-- Handle privately hosted repositories
-
-###2024.02.10
-- Fixed: PHP8 Warning
-
-###2024.02.07
-- Fixed: Unraid Connect (new URL) appearing twice within Apps
-- Changed: Don't display "Read More" on descriptions from dockerHub searches
-- Fixed: Cookies with wrong path being set
-- Fixed: Javascript error on Multi Application Updates (if plugins involved)
-- Changed: Color of card flag if dockerHub search displays an application a template exists for
-- Added: Provisions for a local application feed
-- Changed: Always have debug logs enabled
-- Fixed: Miscellaneous PHP8 warnings
-- Fixed (On supported OS versions): Multi docker installations weren't automatically starting the containers
-
-###2024.01.21
-- Fixed: Templates referencing br0 instead of eth0 (and vice-versa) would tend to show a network type of none when installing.  Automatically adjust templates referencing br0 to instead say eth0 if br0 is not defined
-- Fixed: Action Centre wouldn't get enabled unless updates were available to an app (IE: A deprecated container by itself installed wouldn't trigger AC unless an update to something else was also available)
-- Fixed: Official containers with updates available wouldn't show within Action Centre
-- Added: Popup error if browser fails to communicate with back end running on your server
-- Added: Support CA being able to override the DONE button on docker installs / updates if circumstances warrant (on supported OS versions)
-- Fixed: Miscellaneous PHP8 errors
-- Fixed: Official apps referencing 'library/repository' instead of simply 'repository' would always appear within Previous Apps when installed
-- Changed: Minor optimizations in coding
-
-###2024.01.01
-- Fixed: Inconsistency in popup window for multiple upgrades vs single upgrade via Action Centre
-- Fixed: Statistics, Moderation list etc wasn't having CSS applied
-- Fixed: Multiple upgrades via Action Centre involving containers and plugins wouldn't install upgrade for containers without manually reloading the Apps Tab
-- Fixed: Pinning / Unpinning a language would revert the text for Pin/Unpin to English instead of staying in the applicable language
-- Changed: Roughly 60% lower memory usage
-
-###2023.11.28
-- Fixed: Don't allow donation links for Official containers
-
-###2023.11.25
-- Changed: Minimum requirements for Community Applications now 6.12.0
-- Added: On feed download failure check date and time of server.  If obviously wrong, display message stating to check date and time as this will preclude being able to successfully download the application feed
-- Fixed: Various PHP8 warnings
-- Added: Ability to directly search from within a moderator comment
-- Fixed: Moderator comments (only CA Comments) wouldn't appear within popup if installing the application directly from the card
-- Fixed: Action Centre wouldn't appear if only deprecated / blacklisted apps were present (would only appear if updates were available to an app)
-- Changed: Include link to support thread on failed to download feed
-- Fixed: Orphan containers were being created if selecting multiple application to update within Action Centre
-- Removed: Check for updates button within Installed Applications - Pointless since CA automatically checks if no update check has been performed within the last hour
-- Fixed: Don't enable "Select All" button if there are no checkboxes present within Action Centre on the cards
-- Changed: Ability to override CA's minimum memory requirements
-- Changed: Various CSS 
-- Changed: Don't reload CA between container and plugin updates when doing multiple simultaneous updates
-- Added: Support for 6.13 unlimited width display setting
-- Added: Display a banner if the next revision of CA is incompatible with your OS version, suggesting to upgrade your OS version
-
 ###2023.09.30
 - Changed: run update_cron at array_start (fixes issue with OS 6.12.4)
 - Changed: Don't use CA's awesomplete library when running OS 6.13.x+
@@ -2246,7 +2172,7 @@ if [[ ! -e /usr/local/emhttp/plugins/dynamix/styles/font-cases.ttf ]]; then sed 
 echo ""
 echo "----------------------------------------------------"
 echo " &name; has been installed."
-echo " Copyright 2015-2024, Andrew Zawadzki"
+echo " Copyright 2015-2023, Andrew Zawadzki"
 echo " Version: &version;"
 echo "----------------------------------------------------"
 echo ""
